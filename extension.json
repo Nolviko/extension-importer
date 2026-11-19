@@ -1,0 +1,31 @@
+{
+  "id": "nolviko/importer",
+  "name": "Importer",
+  "version": "1.0.0",
+  "api": 1,
+  "engine": "^1.3",
+  "php": "~8.2.35 || ~8.3.36 || ~8.4.27 || ~8.5.12",
+  "license": "Apache-2.0",
+  "providers": [
+    "src/Provider.php"
+  ],
+  "permissions": [
+    "nolviko.importer.manage"
+  ],
+  "routes": [
+    "nolviko.importer.admin"
+  ],
+  "migrations": [
+    "0001_sources"
+  ],
+  "translations": [
+    "en",
+    "tr"
+  ],
+  "remove": {
+    "clear": [
+      "sources"
+    ]
+  },
+  "repository": "Nolviko/extension-importer"
+}

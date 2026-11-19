@@ -1,0 +1,20 @@
+{
+  "tables": {
+    "sources": {
+      "id": "string",
+      "engine": "string",
+      "host": "string",
+      "port": "integer",
+      "database_name": "string",
+      "username": "string",
+      "password_sealed": "text",
+      "prefix": "string",
+      "charset": "string",
+      "attachment_root": "text",
+      "preflight_json": "text",
+      "created_by": "bigint",
+      "created_at": "string",
+      "updated_at": "string"
+    }
+  }
+}
