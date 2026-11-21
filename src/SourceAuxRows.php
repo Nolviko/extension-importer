@@ -26,23 +26,27 @@ final readonly class SourceAuxRows
             . ') <= 131072 THEN ' . $column . ' ELSE NULL END AS body';
         $keys = [];
         $where = '1 = 1';
-        if ($phase === 'private_sent' && $this->engine === 'smf') {
-            $from = $t('personal_messages') . ' m';
-            $select = 'm.id_pm AS id, m.id_member_from AS owner, m.id_member_from AS author, '
-                . 'm.subject AS name, m.msgtime AS time, ' . $body('m.body');
-            $keys = ['m.id_pm'];
-            $where = 'm.deleted_by_sender = 0 AND m.id_member_from > 0';
-        } elseif ($phase === 'private_inbox') {
+        if ($phase === 'private_inbox') {
+            // Every mailbox copy with the conversation it belongs to (`chain`): SMF's head message, phpBB's root
+            // message; MyBB keeps none, so its chain is worked out from the participants and subject below.
             [$select, $from, $keys, $where] = match ($this->engine) {
-                'smf' => ['r.id_pm AS id, r.id_member AS owner, m.id_member_from AS author, '
-                    . 'm.subject AS name, m.msgtime AS time, ' . $body('m.body'),
-                    $t('pm_recipients') . ' r INNER JOIN ' . $t('personal_messages') . ' m ON m.id_pm = r.id_pm',
-                    ['r.id_pm', 'r.id_member'], 'r.deleted = 0 AND r.id_member > 0'],
+                'smf' => ['x.pm_id AS id, x.pm_owner AS owner, x.pm_author AS author, x.pm_name AS name, '
+                    . 'x.pm_time AS time, x.pm_head AS chain_root, ' . $body('x.pm_body'),
+                    '(SELECT m.id_pm AS pm_id, m.id_member_from AS pm_owner, m.id_member_from AS pm_author, '
+                    . 'm.subject AS pm_name, m.msgtime AS pm_time, m.id_pm_head AS pm_head, m.body AS pm_body FROM '
+                    . $t('personal_messages') . ' m WHERE m.deleted_by_sender = 0 AND m.id_member_from > 0 '
+                    . 'UNION ALL SELECT r.id_pm, r.id_member, m.id_member_from, m.subject, m.msgtime, '
+                    . 'm.id_pm_head, m.body FROM ' . $t('pm_recipients') . ' r INNER JOIN '
+                    . $t('personal_messages') . ' m ON m.id_pm = r.id_pm WHERE r.deleted = 0 AND r.id_member > 0 '
+                    . 'AND (r.id_member <> m.id_member_from OR m.deleted_by_sender = 1)) x',
+                    ['x.pm_id', 'x.pm_owner'], '1 = 1'],
                 'mybb' => ['m.pmid AS id, m.uid AS owner, m.fromid AS author, m.subject AS name, '
-                    . 'm.dateline AS time, ' . $body('m.message'), $t('privatemessages') . ' m',
+                    . 'm.dateline AS time, m.toid AS partner, ' . $body('m.message'), $t('privatemessages') . ' m',
                     ['m.pmid'], 'm.uid > 0'],
                 'phpbb' => ['r.msg_id AS id, r.user_id AS owner, m.author_id AS author, '
-                    . 'm.message_subject AS name, m.message_time AS time, ' . $body('m.message_text'),
+                    . 'm.message_subject AS name, m.message_time AS time, '
+                    . 'CASE WHEN m.root_level > 0 THEN m.root_level ELSE m.msg_id END AS chain_root, '
+                    . $body('m.message_text'),
                     $t('privmsgs_to') . ' r INNER JOIN ' . $t('privmsgs') . ' m ON m.msg_id = r.msg_id',
                     ['r.msg_id', 'r.user_id'], 'r.pm_deleted = 0 AND r.user_id > 1'],
             };
@@ -123,7 +127,7 @@ final readonly class SourceAuxRows
             $parts = [$row['id']];
             if (count($keys) === 2) {
                 $parts[] = (int) $row[str_contains($keys[1], 'user_id') || str_contains($keys[1], 'id_member')
-                    ? 'owner' : 'option'];
+                    || str_contains($keys[1], 'owner') ? 'owner' : 'option'];
             } elseif (count($keys) === 3) {
                 $parts = $this->engine === 'smf' ? [$row['id'], (int) $row['user'], (int) $row['option']]
                     : [$row['id'], (int) $row['option'], (int) $row['user']];
@@ -138,9 +142,30 @@ final readonly class SourceAuxRows
                     }
                 }
             }
+            if ($phase === 'private_inbox') {
+                $row['chain'] = self::chain($this->engine, $row);
+                unset($row['chain_root'], $row['partner']);
+            }
         }
         unset($row);
         return $rows;
+    }
+
+    /** The conversation a mailbox copy belongs to, as a short key (1.1.0). */
+    public static function chain(string $engine, array $row): string
+    {
+        if ($engine !== 'mybb') {
+            return ($engine === 'smf' ? 'h' : 'r') . (int) ($row['chain_root'] ?? $row['id']);
+        }
+        $people = [(int) $row['author'], (int) ($row['partner'] ?? 0)];
+        sort($people);
+        $subject = mb_strtolower(trim((string) $row['name']), 'UTF-8');
+        do {
+            $before = $subject;
+            $subject = trim((string) preg_replace('/^(?:re|fw|fwd|aw|ynt|cvp)\s*(?:\[[0-9]+\])?\s*:\s*/iu', '',
+                $subject));
+        } while ($subject !== $before);
+        return 's' . substr(hash('sha256', implode(',', $people) . "\n" . $subject), 0, 40);
     }
 
     private function mybbOptions(string $after, int $limit): array

@@ -15,6 +15,12 @@ use RuntimeException;
 /** Dedicated read-only transaction per bounded batch. Owner must freeze the source (including MyISAM tables). */
 final class SqlImportSource implements ImportSource
 {
+    /**
+     * How this adapter reads a source (in the job's identity). 2 = importer 1.1.0 (other phases and fields than
+     * 1.0.0), so a job begun with 1.0.0 is not continued with different records; it starts afresh instead.
+     */
+    public const READER = 2;
+
     public function __construct(
         private readonly Connection $source,
         private readonly string $engine,
@@ -73,7 +79,7 @@ final class SqlImportSource implements ImportSource
         }
         return ['engine' => $this->engine, 'version' => $version, 'source_id' => $this->sourceId,
             'prefix' => $this->prefix, 'charset' => $this->charset, 'timestamps' => 'unix-utc',
-                'user_map' => $this->userMap];
+                'user_map' => $this->userMap, 'reader' => self::READER];
     }
 
     public function coverage(): array

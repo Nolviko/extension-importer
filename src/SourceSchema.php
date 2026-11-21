@@ -56,7 +56,8 @@ final class SourceSchema
     public static function phases(string $engine): array
     {
         $base = array_keys(self::SPECS[$engine] ?? throw new RuntimeException('import_engine_unsupported'));
-        return [...$base, ...($engine === 'smf' ? ['private_sent'] : []), 'private_inbox', 'attachments',
+        // 1.1.0: SMF's sent and received copies are one phase in message order, so conversations stay in order.
+        return [...$base, 'private_inbox', 'attachments',
             ...($engine === 'phpbb' ? ['private_files'] : []), 'polls', 'poll_options', 'poll_votes'];
     }
 }
