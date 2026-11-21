@@ -49,9 +49,14 @@ final class SourceRecords
     private static function attachments(string $body, string $engine): string
     {
         return (string) match ($engine) {
-            'smf' => preg_replace(
-                '~\[attach(?:=[^\]\r\n]{0,100})?\]([0-9]{1,19})\[/attach\]~i',
-                '[nolviko-attachment]$1[/nolviko-attachment]',
+            // SMF 2.1: [attach id=N alt=... width=...]file name[/attach]; older: [attach]N[/attach], [attach=N].
+            'smf' => preg_replace_callback(
+                '~\[attach((?:=|\s)[^\]\r\n]{0,300})?\]([^\[\r\n]{0,255})\[/attach\]~i',
+                static function (array $match): string {
+                    $id = preg_match('~(?:^=|\bid=)"?([0-9]{1,19})\b~i', trim($match[1]), $found) === 1
+                        ? $found[1] : (preg_match('~^[0-9]{1,19}$~D', trim($match[2])) === 1 ? trim($match[2]) : null);
+                    return $id === null ? $match[0] : '[nolviko-attachment]' . $id . '[/nolviko-attachment]';
+                },
                 $body
             ),
             'mybb' => preg_replace(

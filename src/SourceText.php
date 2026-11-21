@@ -25,6 +25,23 @@ final class SourceText
         return $charset === 'UTF-8' ? $text : mb_convert_encoding($text, 'UTF-8', $charset);
     }
 
+    /**
+     * A one-line label (poll question or option): phpBB's s9e storage format becomes its text, UID suffixes and
+     * markup removed; other forums' labels are returned as they are.
+     */
+    public static function plain(string $text, string $engine): string
+    {
+        if ($engine !== 'phpbb' || !(str_starts_with($text, '<r>') || str_starts_with($text, '<t>'))) {
+            return $text;
+        }
+        try {
+            $text = self::body($text, 'phpbb', 'UTF-8');
+        } catch (InvalidArgumentException) {
+            return $text;
+        }
+        return trim((string) preg_replace('~\[/?[a-z*]+(?:=[^\]\r\n]*)?\]~i', '', $text));
+    }
+
     public static function body(string $text, string $engine, string $charset): string
     {
         $text = self::decode($text, $charset);

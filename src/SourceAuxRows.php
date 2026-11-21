@@ -132,6 +132,10 @@ final readonly class SourceAuxRows
             foreach (['name', 'label', 'body'] as $field) {
                 if (isset($row[$field])) {
                     $row[$field] = SourceText::decode((string) $row[$field], $this->charset);
+                    if ($this->engine === 'phpbb' && $field !== 'body' && str_starts_with($phase, 'poll')) {
+                        // phpBB stores poll questions and options in its s9e storage format too.
+                        $row[$field] = SourceText::plain($row[$field], 'phpbb');
+                    }
                 }
             }
         }
@@ -149,8 +153,13 @@ final readonly class SourceAuxRows
             if (strlen($row['options']) > 65536 || (int) $row['numoptions'] > 100) {
                 throw new RuntimeException('import_poll_budget');
             }
-            $labels = explode('||~|', $row['options']);
-            $votes = explode('||~|', $row['votes']);
+            // MyBB 1.8 writes "||~|~||" between options; copies rewritten to "||~|" are still read.
+            $labels = explode('||~|~||', $row['options']);
+            $votes = explode('||~|~||', $row['votes']);
+            if (count($labels) !== (int) $row['numoptions'] || count($labels) !== count($votes)) {
+                $labels = explode('||~|', $row['options']);
+                $votes = explode('||~|', $row['votes']);
+            }
             if (count($labels) !== (int) $row['numoptions'] || count($labels) !== count($votes)) {
                 throw new RuntimeException('import_poll_source_invalid');
             }
