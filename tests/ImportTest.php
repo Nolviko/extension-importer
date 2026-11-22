@@ -56,8 +56,8 @@ final class ImportTest extends TestCase
     public static function setUpBeforeClass(): void
     {
         foreach (
-            ['ImportSource', 'SourceText', 'SourceSchema', 'SourceAuxRows', 'LocalImportAsset', 'SqlImportSource',
-            'SourceRecords', 'ImportPreflight', 'ImportSources', 'ImportRunner', 'Importer'] as $class
+            ['ImportSource', 'SourceText', 'SourceSchema', 'SourceAuxRows', 'ForumAccess', 'LocalImportAsset',
+            'SqlImportSource', 'SourceRecords', 'ImportPreflight', 'ImportSources', 'ImportRunner', 'Importer'] as $class
         ) {
             require_once dirname(__DIR__) . '/src/' . $class . '.php';
         }

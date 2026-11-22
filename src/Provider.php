@@ -36,8 +36,8 @@ use NolvikoExt\Importer\Importer;
 use NolvikoExt\Importer\ImportSources;
 
 foreach (
-    ['ImportSource', 'SourceText', 'SourceSchema', 'SourceAuxRows', 'LocalImportAsset', 'SqlImportSource',
-    'SourceRecords', 'ImportPreflight', 'ImportSources', 'ImportRunner', 'Importer', 'AdminHandler'] as $class
+    ['ImportSource', 'SourceText', 'SourceSchema', 'SourceAuxRows', 'ForumAccess', 'LocalImportAsset',
+    'SqlImportSource', 'SourceRecords', 'ImportPreflight', 'ImportSources', 'ImportRunner', 'Importer', 'AdminHandler'] as $class
 ) {
     require_once __DIR__ . '/' . $class . '.php';
 }
