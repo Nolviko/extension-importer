@@ -21,7 +21,7 @@ final class LegacyForumFixture
                 'topics' => 'id_topic,id_board,id_member_started,id_first_msg,locked,is_sticky,approved,'
                     . 'id_redirect_topic,id_poll',
                 'messages' => 'id_msg,id_topic,id_member,body:s,poster_time,approved,subject:s',
-                'personal_messages' => 'id_pm,id_member_from,subject:s,msgtime,body:s,deleted_by_sender',
+                'personal_messages' => 'id_pm,id_pm_head,id_member_from,subject:s,msgtime,body:s,deleted_by_sender',
                 'pm_recipients' => 'id_pm,id_member,deleted',
                 'attachments' => 'id_attach,id_msg,id_member,filename:s,file_h'
                     . 'ash:s,id_folder,size,approved,attachment_type',
@@ -34,7 +34,7 @@ final class LegacyForumFixture
                 'forums' => 'fid,name:s,description:s,pid,disporder,type:s',
                 'threads' => 'tid,fid,uid,subject:s,dateline,firstpost,closed:s,sticky,visible',
                 'posts' => 'pid,tid,uid,message:s,dateline,visible',
-                'privatemessages' => 'pmid,uid,fromid,subject:s,dateline,message:s',
+                'privatemessages' => 'pmid,uid,toid,fromid,folder,subject:s,dateline,message:s',
                 'attachments' => 'aid,pid,uid,filename:s,attachname:s,filesize,visible,dateuploaded',
                 'polls' => 'pid,tid,question:s,multiple,maxoptions,numopt'
                     . 'ions,timeout,dateline,closed,options:s,votes:s',
@@ -49,7 +49,7 @@ final class LegacyForumFixture
                     . 'topic_status,topic_type,topic_visibility,topic_moved_id,poll_title:s,poll_max_options,'
                     . 'poll_start,poll_length',
                 'posts' => 'post_id,topic_id,poster_id,post_text:s,post_time,post_visibility',
-                'privmsgs' => 'msg_id,author_id,message_subject:s,message_time,message_text:s',
+                'privmsgs' => 'msg_id,root_level,author_id,message_subject:s,message_time,message_text:s',
                 'privmsgs_to' => 'msg_id,user_id,pm_deleted',
                 'attachments' => 'attach_id,post_msg_id,poster_id,real_filename:s,physical_filename:s,filesize,'
                     . 'filetime,in_message,is_orphan',
