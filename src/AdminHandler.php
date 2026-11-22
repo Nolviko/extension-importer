@@ -383,13 +383,11 @@ final readonly class AdminHandler implements RouteHandler
                 . '>' . self::e($charset) . '</option>';
         }
         return $html . '</select></p>'
-            . $this->field(
-                'import-attachments',
-                'attachment_root',
-                'attachment_root',
-                $form['attachment_root'],
-                ' maxlength="1024"'
-            )
+            // 1.1.0: one folder per line; SMF's numbered upload folders as `N=path`.
+            . '<p><label for="import-attachments">' . self::e($this->text('attachment_root')) . '</label>'
+            . '<textarea id="import-attachments" name="attachment_root" rows="3" maxlength="8192">'
+            . self::e($form['attachment_root']) . '</textarea><span class="meta">'
+            . self::e($this->text('attachment_root_hint')) . '</span></p>'
             . '<h4>' . self::e($this->text('before_start')) . '</h4><ul><li>'
             . self::e($this->text('before_permissions')) . '</li><li>' . self::e($this->text('before_passwords'))
             . '</li><li>' . self::e($this->text('before_links'))
@@ -495,6 +493,7 @@ final readonly class AdminHandler implements RouteHandler
             'import_attachment_dir_missing' => 'source_attachments_missing',
             'import_charset_differs' => 'source_charset_differs',
             'import_source_writable' => 'source_writable',
+            'import_private_files_none' => 'source_private_files_none',
             'import_not_complete' => 'import_not_complete',
             default => 'import_failed',
         };

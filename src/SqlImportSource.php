@@ -11,6 +11,7 @@ use Doctrine\DBAL\Exception\TableNotFoundException;
 use Nolviko\Modules\Importers\Domain\ImportAsset;
 use Nolviko\Modules\Importers\Domain\ImportCursor;
 use RuntimeException;
+use Throwable;
 
 /** Dedicated read-only transaction per bounded batch. Owner must freeze the source (including MyISAM tables). */
 final class SqlImportSource implements ImportSource
@@ -185,14 +186,62 @@ final class SqlImportSource implements ImportSource
                 }
             }
             unset($row);
+            if ($phase === 'forums') {
+                // 1.1.0: who may see and read each forum, as the source had it (ForumAccess).
+                $rows = ForumAccess::enrich($this->source, $this->engine, $this->table(...), $rows);
+            }
             return $rows;
         });
+    }
+
+    /** @var array<string, string>|null SMF folders found in the source settings (1.1.0). */
+    private ?array $smfRoots = null;
+
+    /**
+     * SMF upload folders from `settings.attachmentUploadDir` that exist on this server and are not given: the
+     * stored path itself, or a folder with the same name next to the first given folder.
+     *
+     * @param array<string, string> $given
+     * @return array<string, string>
+     */
+    public static function smfFolders(Connection $source, string $prefix, array $given): array
+    {
+        try {
+            $value = $source->fetchOne('SELECT value FROM ' . $source->quoteIdentifier($prefix . 'settings')
+                . " WHERE variable = 'attachmentUploadDir'");
+        } catch (Throwable) {
+            return [];
+        }
+        if (!is_string($value) || $value === '' || strlen($value) > 65536) {
+            return [];
+        }
+        $decoded = json_decode($value, true, 4);
+        $folders = is_array($decoded) ? $decoded : ['1' => $value];
+        $base = $given === [] ? null : dirname((string) reset($given));
+        $found = [];
+        foreach ($folders as $folder => $path) {
+            if (!is_string($path) || preg_match('/^[0-9]{1,8}$/D', (string) $folder) !== 1 || isset($given[$folder])) {
+                continue;
+            }
+            $path = rtrim($path, '/' . chr(92));
+            foreach ([$path, $base === null ? null : $base . '/' . basename($path)] as $candidate) {
+                if (is_string($candidate) && $candidate !== '' && is_dir($candidate) && is_readable($candidate)) {
+                    $found[(string) $folder] = $candidate;
+                    break;
+                }
+            }
+        }
+        return $found;
     }
 
     public function asset(array $row): ?ImportAsset
     {
         $folder = (string) ($row['folder'] ?? '1');
         $root = $this->attachmentRoots[$folder] ?? null;
+        if (!is_string($root) && $this->engine === 'smf') {
+            $this->smfRoots ??= self::smfFolders($this->source, $this->prefix, $this->attachmentRoots);
+            $root = $this->smfRoots[$folder] ?? null;
+        }
         if (!is_string($root)) {
             throw new RuntimeException('import_attachment_root_required');
         }

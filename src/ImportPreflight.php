@@ -38,8 +38,51 @@ final readonly class ImportPreflight
     public const BLOCKING = ['import_source_not_found', 'import_source_ambiguous', 'import_source_version_unsupported',
         'import_attachment_root_required', 'import_attachment_dir_missing'];
 
+    /** Counting queries per engine and kind: [table, condition]. */
+    private const EXACT = [
+        'smf' => ['users' => ['members', '1 = 1'], 'categories' => ['categories', '1 = 1'],
+            'forums' => ['boards', '1 = 1'], 'threads' => ['topics', '1 = 1'], 'posts' => ['messages', '1 = 1'],
+            'attachments' => ['attachments', 'attachment_type = 0 AND id_msg > 0'],
+            'polls' => ['topics', 'id_poll > 0'], 'private' => ['personal_messages', '1 = 1']],
+        'mybb' => ['users' => ['users', '1 = 1'], 'categories' => ['forums', "type = 'c'"],
+            'forums' => ['forums', "type = 'f'"], 'threads' => ['threads', '1 = 1'], 'posts' => ['posts', '1 = 1'],
+            'attachments' => ['attachments', 'pid > 0'], 'polls' => ['polls', '1 = 1'],
+            'private' => ['privatemessages', 'folder <> 2']],
+        'phpbb' => ['users' => ['users', 'user_type <> 2'], 'categories' => ['forums', 'forum_type = 0'],
+            'forums' => ['forums', 'forum_type <> 0'], 'threads' => ['topics', '1 = 1'],
+            'posts' => ['posts', '1 = 1'], 'attachments' => ['attachments', 'in_message = 0'],
+            'polls' => ['topics', "poll_start > 0 AND poll_title <> ''"], 'private' => ['privmsgs', '1 = 1']],
+    ];
+
     public function __construct(private Connection $source)
     {
+    }
+
+    /**
+     * SMF upload folders the panel did not name, as found on this server: the source's own path, or a folder of
+     * the same name next to the first given folder (a copied forum).
+     *
+     * @param array<string, string> $given
+     * @return array<string, string>
+     */
+    private function smfFolders(string $prefix, array $given): array
+    {
+        return SqlImportSource::smfFolders($this->source, $prefix, $given);
+    }
+
+    /** @return array<string, int> Kinds whose exact count could be read. */
+    private function exact(string $engine, string $prefix): array
+    {
+        $counts = [];
+        foreach (self::EXACT[$engine] ?? [] as $kind => [$table, $condition]) {
+            try {
+                $counts[$kind] = (int) $this->source->fetchOne('SELECT COUNT(*) FROM '
+                    . $this->source->quoteIdentifier($prefix . $table) . ' WHERE ' . $condition);
+            } catch (Throwable) {
+                continue;
+            }
+        }
+        return $counts;
     }
 
     /**
@@ -102,11 +145,27 @@ final readonly class ImportPreflight
         foreach (self::TOTALS[$engine] as $kind => $table) {
             $result['totals'][$kind] = isset($tables[$prefix . $table]) ? $tables[$prefix . $table]['rows'] : null;
         }
-        $root = trim((string) ($wanted['attachment_root'] ?? ''));
-        if ($root === '' && ($result['totals']['attachments'] ?? 0) > 0) {
+        // 1.1.0: exact counts of what will be imported (categories apart from forums, messages instead of mailbox
+        // copies, post attachments only). Plain COUNT queries; the table estimates above stay as the fallback.
+        $result['totals'] = $this->exact($engine, $prefix) + $result['totals'];
+        $roots = ImportSources::roots((string) ($wanted['attachment_root'] ?? ''));
+        if ($engine === 'smf') {
+            // SMF keeps its upload folders in settings.attachmentUploadDir (a path, or JSON for several).
+            $roots += $this->smfFolders($prefix, $roots);
+        }
+        if ($roots === [] && ($result['totals']['attachments'] ?? 0) > 0) {
             $result['problems'][] = 'import_attachment_root_required';
-        } elseif ($root !== '' && (!is_dir($root) || !is_readable($root))) {
-            $result['problems'][] = 'import_attachment_dir_missing';
+        }
+        foreach ($roots as $root) {
+            if (!is_dir($root) || !is_readable($root)) {
+                $result['problems'][] = 'import_attachment_dir_missing';
+                break;
+            }
+        }
+        $result['attachment_folders'] = count($roots);
+        if ($engine !== 'phpbb') {
+            // Stock SMF 2.1 and MyBB 1.8 have no private-message attachments; said here so nothing seems lost.
+            $result['problems'][] = 'import_private_files_none';
         }
         if ($this->writable()) {
             $result['problems'][] = 'import_source_writable';

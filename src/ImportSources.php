@@ -128,11 +128,21 @@ final readonly class ImportSources
             'id' => $id, 'engine' => $entry['engine'], 'host' => $entry['host'], 'port' => $entry['port'],
             'database_name' => $entry['database'], 'username' => $entry['username'],
             'password_sealed' => $this->seal($entry['password']), 'prefix' => $entry['prefix'],
-            'charset' => $entry['charset'], 'attachment_root' => $entry['attachment_roots']['1'] ?? '',
+            'charset' => $entry['charset'], 'attachment_root' => self::rootsText($entry['attachment_roots']),
             'preflight_json' => json_encode($preflight, JSON_THROW_ON_ERROR), 'created_by' => $actor,
             'created_at' => $now, 'updated_at' => $now,
         ]);
         return $id;
+    }
+
+    /** @param array<string, string> $roots */
+    private static function rootsText(array $roots): string
+    {
+        $lines = [];
+        foreach ($roots as $folder => $path) {
+            $lines[] = count($roots) === 1 && (string) $folder === '1' ? $path : $folder . '=' . $path;
+        }
+        return implode("\n", $lines);
     }
 
     /** Removes a panel source; imports already made from it keep their own records. */
@@ -148,13 +158,19 @@ final readonly class ImportSources
     public static function validated(#[SensitiveParameter] array $entry): array
     {
         $root = trim((string) ($entry['attachment_root'] ?? ''));
+        $roots = self::roots($root);
         $entry = ['id' => (string) ($entry['id'] ?? 'panel-check'), 'engine' => (string) ($entry['engine'] ?? ''),
             'driver' => 'mysql', 'host' => trim((string) ($entry['host'] ?? '')),
             'port' => (int) ($entry['port'] ?? 3306), 'database' => trim((string) ($entry['database'] ?? '')),
             'username' => (string) ($entry['username'] ?? ''), 'password' => (string) ($entry['password'] ?? ''),
             'prefix' => trim((string) ($entry['prefix'] ?? '')),
             'charset' => (string) ($entry['charset'] ?? 'UTF-8'),
-            'attachment_roots' => $root === '' ? [] : ['1' => rtrim($root, '/\\')], 'user_map' => []];
+            'attachment_roots' => $roots, 'user_map' => []];
+        $pathsValid = count($roots) <= 32;
+        foreach ($roots as $path) {
+            $pathsValid = $pathsValid && !str_contains($path, "\0")
+                && (str_starts_with($path, '/') || preg_match('~^[A-Za-z]:[' . chr(92) . '/]~', $path) === 1);
+        }
         if (
             ($entry['engine'] !== '' && !in_array($entry['engine'], self::ENGINES, true))
             || !self::host($entry['host'])
@@ -163,12 +179,34 @@ final readonly class ImportSources
             || $entry['username'] === '' || strlen($entry['username']) > 128 || strlen($entry['password']) > 512
             || preg_match('/^[A-Za-z0-9_]{0,48}$/D', $entry['prefix']) !== 1
             || !in_array($entry['charset'], self::CHARSETS, true)
-            || strlen($root) > 1024 || str_contains($root, "\0")
-            || ($root !== '' && !str_starts_with($root, '/') && preg_match('~^[A-Za-z]:[\\\\/]~', $root) !== 1)
+            || strlen($root) > 8192 || !$pathsValid
         ) {
             throw new RuntimeException('import_source_fields_invalid');
         }
         return $entry;
+    }
+
+    /**
+     * Attachment folders from the panel field (1.1.0): one per line, `N=path` for SMF's numbered folders, or a
+     * single path for folder 1. SMF forums with several upload folders list each (see ImportPreflight).
+     *
+     * @return array<string, string> Folder number => path without a trailing slash.
+     */
+    public static function roots(string $text): array
+    {
+        $roots = [];
+        foreach (preg_split('/\R/', trim($text)) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '') {
+                continue;
+            }
+            $folder = '1';
+            if (preg_match('/^([0-9]{1,8})\s*[=:]\s*(.+)$/D', $line, $match) === 1) {
+                [$folder, $line] = [$match[1], trim($match[2])];
+            }
+            $roots[$folder] = rtrim($line, '/' . chr(92));
+        }
+        return $roots;
     }
 
     private static function host(string $host): bool
@@ -202,7 +240,7 @@ final readonly class ImportSources
                 'host' => $row['host'], 'port' => (int) $row['port'], 'database' => $row['database_name'],
                 'username' => $row['username'], 'password' => $this->unseal((string) $row['password_sealed']),
                 'prefix' => $row['prefix'], 'charset' => $row['charset'],
-                'attachment_roots' => is_string($root) && $root !== '' ? ['1' => $root] : [], 'user_map' => []];
+                'attachment_roots' => is_string($root) ? self::roots($root) : [], 'user_map' => []];
         }
         return $entries;
     }

@@ -1,7 +1,7 @@
 {
     "nolviko.importer.acknowledge": "Kaynak donduruldu; incelemeye kadar kısıtlı görünürlüğü kabul ediyorum.",
     "nolviko.importer.activate_members": "Aktarılan üyeler giriş yapabilsin (parolasını yenilemesi gerekenler askıda kalır)",
-    "nolviko.importer.attachment_root": "Bu sunucudaki ek klasörü (tam yol; forumda ek yoksa boş)",
+    "nolviko.importer.attachment_root": "Bu sunucudaki ek dosya klasörleri (tam yol; forumda ek yoksa boş bırakın)",
     "nolviko.importer.before_links": "Nolviko eski forumun adresinde çalıştığında eski konu ve mesaj adresleri yenilerine yönlendirilir.",
     "nolviko.importer.before_passwords": "Biçimi taşınabilen üyeler eski parolasıyla girer; diğerleri \"Parolamı unuttum\" ile yeni parola alır ve notlarda listelenir.",
     "nolviko.importer.before_permissions": "Eski forumun izinleri kopyalanmaz: aktarılan bölümler, aktarımı yayına açana kadar gizli kalır; sonra üst bölümün ve site varsayılanının ayarlarını izler.",
@@ -30,7 +30,7 @@
     "nolviko.importer.download_report": "Özeti indir (JSON)",
     "nolviko.importer.engine": "Forum yazılımı",
     "nolviko.importer.engine_auto": "Otomatik bul",
-    "nolviko.importer.estimate": "Tahmini kayıtlar",
+    "nolviko.importer.estimate": "Aktarılacak",
     "nolviko.importer.excluded": "Kopyalanmadı; aktarım raporunu inceleyin",
     "nolviko.importer.found": "{engine} {version}, tablo öneki \"{prefix}\", karakter seti {charset}",
     "nolviko.importer.import_changed": "Doğrulamada değişmiş veya eksik kayıt bulundu. Kaynağı dondurulmuş tutup aktarımı inceleyin.",
@@ -98,5 +98,7 @@
     "nolviko.importer.source_version_unsupported": "Bu sürüm henüz desteklenmiyor. Desteklenenler: SMF 2.1, MyBB 1.8 ve phpBB 3.3.",
     "nolviko.importer.source_writable": "Öneri: bu veritabanı hesabı kaynağı değiştirebilir. Forumun bir kopyasını veya salt okunur bir hesap kullanın.",
     "nolviko.importer.sources": "Kaynaklar",
-    "nolviko.importer.verified": "Doğrulanan kayıtlar"
+    "nolviko.importer.verified": "Doğrulanan kayıtlar",
+    "nolviko.importer.attachment_root_hint": "Her satıra bir klasör. Birden çok yükleme klasörü olan SMF: her birini numara=yol biçiminde yazın, örneğin 2=/home/site/attachments2. SMF ayarlarında kayıtlı klasörler bu sunucuda varsa kendiliğinden bulunur.",
+    "nolviko.importer.source_private_files_none": "Not: bu forum yazılımı özel mesajlarda dosya tutmaz, bu yüzden mesajlarla birlikte dosya aktarılmaz (eklentilerle eklenen dosyalar okunmaz)."
 }

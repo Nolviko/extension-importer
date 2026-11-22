@@ -35,6 +35,17 @@ Tests run from the Nolviko workspace:
 php dev/vendor/bin/phpunit --bootstrap dev/vendor/autoload.php extensions-src/nolviko/importer/tests
 ```
 
+## Changes
+
+### 1.1.0 (for Nolviko 0.1.0-beta.18)
+- Forum access is read from the source (SMF member groups, MyBB forum permissions, phpBB ACL): members-only and group-only forums stay closed after publishing; password and link forums are marked.
+- MyBB poll options are split on `||~|~||`; phpBB poll questions and options are plain text instead of storage XML.
+- SMF `[attach id=N]` inline tags become inline attachments.
+- SMF with several upload folders: the panel accepts one folder per line (`N=path`), and folders listed in SMF's own settings are found automatically.
+- Private messages keep their conversations (SMF head message, phpBB root message, MyBB participants and subject); SMF sent and received copies are read in one pass.
+- The preflight shows exact counts of what will be imported (categories apart from forums, messages instead of mailbox copies) and says that SMF and MyBB keep no private-message files.
+- Jobs started with 1.0.0 are not continued with 1.1.0 (reader version 2); start the import again.
+
 ## License
 
 Apache-2.0

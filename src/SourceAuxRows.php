@@ -162,8 +162,11 @@ final readonly class SourceAuxRows
         $subject = mb_strtolower(trim((string) $row['name']), 'UTF-8');
         do {
             $before = $subject;
-            $subject = trim((string) preg_replace('/^(?:re|fw|fwd|aw|ynt|cvp)\s*(?:\[[0-9]+\])?\s*:\s*/iu', '',
-                $subject));
+            $subject = trim((string) preg_replace(
+                '/^(?:re|fw|fwd|aw|ynt|cvp)\s*(?:\[[0-9]+\])?\s*:\s*/iu',
+                '',
+                $subject,
+            ));
         } while ($subject !== $before);
         return 's' . substr(hash('sha256', implode(',', $people) . "\n" . $subject), 0, 40);
     }

@@ -1,7 +1,7 @@
 {
     "nolviko.importer.acknowledge": "The source is frozen and I accept restricted visibility until review.",
     "nolviko.importer.activate_members": "Let imported members sign in (members who must reset their password stay suspended)",
-    "nolviko.importer.attachment_root": "Attachment folder on this server (full path; empty if the forum has no attachments)",
+    "nolviko.importer.attachment_root": "Attachment folders on this server (full paths; empty if the forum has no attachments)",
     "nolviko.importer.before_links": "Old topic and post addresses redirect to the new ones when Nolviko runs at the old forum's address.",
     "nolviko.importer.before_passwords": "Members keep their old password where its format can be carried over; the others must use \"Forgot password\" and are listed in the notes.",
     "nolviko.importer.before_permissions": "Permissions of the old forum are not copied: imported forums stay hidden until you publish the import, then follow their parent forum and the site default.",
@@ -30,7 +30,7 @@
     "nolviko.importer.download_report": "Download the summary (JSON)",
     "nolviko.importer.engine": "Forum software",
     "nolviko.importer.engine_auto": "Find automatically",
-    "nolviko.importer.estimate": "Estimated records",
+    "nolviko.importer.estimate": "Will be imported",
     "nolviko.importer.excluded": "Not copied; review the migration report",
     "nolviko.importer.found": "{engine} {version}, table prefix \"{prefix}\", character set {charset}",
     "nolviko.importer.import_changed": "Verification found changed or missing records. Keep the source frozen and review the import.",
@@ -98,5 +98,7 @@
     "nolviko.importer.source_version_unsupported": "This version is not supported yet. Supported: SMF 2.1, MyBB 1.8 and phpBB 3.3.",
     "nolviko.importer.source_writable": "Advice: this database account can change the source. Use a copy of the forum or a read-only account.",
     "nolviko.importer.sources": "Sources",
-    "nolviko.importer.verified": "Verified records"
+    "nolviko.importer.verified": "Verified records",
+    "nolviko.importer.attachment_root_hint": "One folder per line. SMF with several upload folders: write each as number=path, for example 2=/home/site/attachments2. Folders listed in SMF’s own settings are found automatically when they exist on this server.",
+    "nolviko.importer.source_private_files_none": "Note: this forum software keeps no files in private messages, so none are imported with them (files added by plugins are not read)."
 }
